@@ -1,10 +1,11 @@
 """code.py"""
 """Created by Rickey M Horwitz, Intense Arcade"""
+"""Modified by Jacob Capper to use ADXL345 instead of LIS3DH"""
 import time
 import board
 import busio
 import digitalio
-import adafruit_lis3dh
+import adafruit_adxl34x
 import adafruit_tlc5947
 import analogio
 import usb_hid
@@ -400,11 +401,13 @@ parameter_dat = tuple((acd, xag, yag, po, pg))
 
 # time.sleep(1.0)
 i2c = busio.I2C(board.GP5, board.GP4)
-lis3dh = adafruit_lis3dh.LIS3DH_I2C(i2c, address=0x19)
-lis3dh.range = adafruit_lis3dh.RANGE_2_G
-lis3dh.range = adafruit_lis3dh.RANGE_2_G
-lis3dh.data_rate = adafruit_lis3dh.DATARATE_100_HZ
-error_lis3dh = 0
+# Initialize ADXL345 (default I2C address is 0x53)
+adxl345 = adafruit_adxl34x.ADXL345(i2c)
+# Set range to +/-2g (similar to LIS3DH RANGE_2_G)
+adxl345.range = adafruit_adxl34x.Range.RANGE_2_G
+# Set data rate to 100Hz (similar to LIS3DH DATARATE_100_HZ)
+adxl345.data_rate = adafruit_adxl34x.DataRate.RATE_100_HZ
+error_adxl345 = 0
 error_flag = 0
 
 # Define pins connected to the TLC5947
@@ -439,19 +442,19 @@ time_a = 0
 
 
 class x_acc0:
-    value = int(lis3dh.acceleration.x * parameter_dat[1])
+    value = int(adxl345.acceleration[0] * parameter_dat[1])
 
 
 class y_acc0:
-    value = int(lis3dh.acceleration.y * parameter_dat[2])
+    value = int(adxl345.acceleration[1] * parameter_dat[2])
 
 
 class x_acc1:
-    value = int(lis3dh.acceleration.y * parameter_dat[2])
+    value = int(adxl345.acceleration[1] * parameter_dat[2])
 
 
 class y_acc1:
-    value = int(lis3dh.acceleration.x * parameter_dat[1])
+    value = int(adxl345.acceleration[0] * parameter_dat[1])
 
 
 Plunger = analogio.AnalogIn(board.A2)
@@ -544,21 +547,21 @@ while True:
     if error_flag == 0:
         try:
             if ao == 0:
-                x_acc0.value = int((lis3dh.acceleration.x) * int(parameter_dat[1]))
-                y_acc0.value = int((lis3dh.acceleration.y) * int(parameter_dat[2]))
+                x_acc0.value = int((adxl345.acceleration[0]) * int(parameter_dat[1]))
+                y_acc0.value = int((adxl345.acceleration[1]) * int(parameter_dat[2]))
             if ao == 1:
-                x_acc1.value = int((lis3dh.acceleration.y) * int(parameter_dat[2]))
-                y_acc1.value = int((lis3dh.acceleration.x) * int(parameter_dat[1]))
+                x_acc1.value = int((adxl345.acceleration[1]) * int(parameter_dat[2]))
+                y_acc1.value = int((adxl345.acceleration[0]) * int(parameter_dat[1]))
             if ao == 2:
-                x_acc0.value = int((lis3dh.acceleration.x) * int(parameter_dat[1]))
+                x_acc0.value = int((adxl345.acceleration[0]) * int(parameter_dat[1]))
                 y_acc0.value = -1 * (
-                    int((lis3dh.acceleration.y) * int(parameter_dat[2]))
+                    int((adxl345.acceleration[1]) * int(parameter_dat[2]))
                 )
             if ao == 3:
                 x_acc1.value = -1 * (
-                    int((lis3dh.acceleration.y) * int(parameter_dat[2]))
+                    int((adxl345.acceleration[1]) * int(parameter_dat[2]))
                 )
-                y_acc1.value = int((lis3dh.acceleration.x) * int(parameter_dat[1]))
+                y_acc1.value = int((adxl345.acceleration[0]) * int(parameter_dat[1]))
 
         except OSError:
             error_flag = 1
@@ -571,27 +574,27 @@ while True:
 
     if x_acc0 == 0 and y_acc0 == 0 and x_acc1 == 0 and y_acc1 == 0:
         time.sleep(0.1)
-        print("lis3dh is dead, re-initializing")
+        print("adxl345 is dead, re-initializing")
         try:
-            lis3dh = adafruit_lis3dh.LIS3DH_I2C(i2c, address=0x19)
-            lis3dh.range = adafruit_lis3dh.RANGE_2_G
-            lis3dh.data_rate = adafruit_lis3dh.DATARATE_100_HZ
+            adxl345 = adafruit_adxl34x.ADXL345(i2c)
+            adxl345.range = adafruit_adxl34x.Range.RANGE_2_G
+            adxl345.data_rate = adafruit_adxl34x.DataRate.RATE_100_HZ
             if ao == 0:
-                x_acc0.value = int((lis3dh.acceleration.x) * int(parameter_dat[1]))
-                y_acc0.value = int((lis3dh.acceleration.y) * int(parameter_dat[2]))
+                x_acc0.value = int((adxl345.acceleration[0]) * int(parameter_dat[1]))
+                y_acc0.value = int((adxl345.acceleration[1]) * int(parameter_dat[2]))
             if ao == 1:
-                x_acc1.value = int((lis3dh.acceleration.y) * int(parameter_dat[2]))
-                y_acc1.value = int((lis3dh.acceleration.x) * int(parameter_dat[1]))
+                x_acc1.value = int((adxl345.acceleration[1]) * int(parameter_dat[2]))
+                y_acc1.value = int((adxl345.acceleration[0]) * int(parameter_dat[1]))
             if ao == 2:
-                x_acc0.value = int((lis3dh.acceleration.x) * int(parameter_dat[1]))
+                x_acc0.value = int((adxl345.acceleration[0]) * int(parameter_dat[1]))
                 y_acc0.value = -1 * (
-                    int((lis3dh.acceleration.y) * int(parameter_dat[2]))
+                    int((adxl345.acceleration[1]) * int(parameter_dat[2]))
                 )
             if ao == 3:
                 x_acc1.value = -1 * (
-                    int((lis3dh.acceleration.y) * int(parameter_dat[2]))
+                    int((adxl345.acceleration[1]) * int(parameter_dat[2]))
                 )
-                y_acc1.value = int((lis3dh.acceleration.x) * int(parameter_dat[1]))
+                y_acc1.value = int((adxl345.acceleration[0]) * int(parameter_dat[1]))
         except ValueError:
             error_flag = 1
     try:
@@ -625,7 +628,7 @@ while True:
     if not (button_3.value):
         if btp_3 == 1:
             keyboard.release(getattr(Keycode, button_dat[2]))
-            lc = 0
+            btp_3 = 0
     if button_4.value:
         btp_4 = 1
         keyboard.press(getattr(Keycode, button_dat[3]))
@@ -633,7 +636,7 @@ while True:
     if not button_4.value:
         if btp_4 == 1:
             keyboard.release(getattr(Keycode, button_dat[3]))
-            btp_4 == 0
+            btp_4 = 0
     if button_5.value:
         btp_5 = 1
         keyboard.press(getattr(Keycode, button_dat[4]))
@@ -742,17 +745,17 @@ while True:
             keyboard.release(getattr(Keycode, button_dat[15]))
             btp_16 = 0
     if error_flag == 1:
-        error_lis3dh = error_lis3dh + 1
+        error_adxl345 = error_adxl345 + 1
 
-    if error_lis3dh == 250:  # this is equivent to 1.25 seconds
-        print("error_flag:", error_flag, "Error_lis3dh", error_lis3dh)
-        error_lis3dh = 0
+    if error_adxl345 == 250:  # this is equivalent to 1.25 seconds
+        print("error_flag:", error_flag, "Error_adxl345", error_adxl345)
+        error_adxl345 = 0
         error_flag = 0
         try:
-            lis3dh = adafruit_lis3dh.LIS3DH_I2C(i2c, address=0x19)
-            lis3dh.range = adafruit_lis3dh.RANGE_2_G
-            lis3dh.data_rate = adafruit_lis3dh.DATARATE_100_HZ
-            error_lis3dh = 0
+            adxl345 = adafruit_adxl34x.ADXL345(i2c)
+            adxl345.range = adafruit_adxl34x.Range.RANGE_2_G
+            adxl345.data_rate = adafruit_adxl34x.DataRate.RATE_100_HZ
+            error_adxl345 = 0
             error_flag = 0
         except ValueError:
             error_flag = 1
